@@ -331,31 +331,28 @@ class CIAOExample():
 def parse_cli():
     "Parse the command line options"
 
-    from optparse import OptionParser
-    cli_pars = OptionParser()
+    import argparse
 
-    cli_pars.add_option("-d", "--skip-ds9", dest="run_ds9", default=True,
-                        action="store_false", help="Skip running ds9 commands")
-    cli_pars.add_option("-r", "--skip-run", dest="run_cmd", default=True,
-                        action="store_false", help="Skip running CIAO commands")
-    (options, args) = cli_pars.parse_args()
+    cli_pars = argparse.ArgumentParser()
+    cli_pars.add_argument("--infile", dest="infile", default="gallery.cfg",
+                          action="store",
+                          help="Configuration file name containing text and commands")
+    cli_pars.add_argument("--skip-ds9", dest="run_ds9", default=True,
+                          action="store_false", help="Skip running ds9 commands")
+    cli_pars.add_argument("--skip-run", dest="run_cmd", default=True,
+                          action="store_false", help="Skip running CIAO commands")
 
-    if len(args) == 0:
-        infile = "gallery.cfg"
-    elif len(args) == 1:
-        infile = args[0]
-    else:
-        raise ValueError("Usage: python gallery.py [--skip-ds9] [--skip-run] [infile]")
+    args = cli_pars.parse_args()
 
-    return options, infile
+    return args
 
 
-def parse_config(infile, options):
+def parse_config(options):
     "Parse the config file"
 
     import configparser as cfg
     tasks = cfg.ConfigParser()
-    tasks.read_file(open(infile, "r", encoding="ascii"))
+    tasks.read_file(open(options.infile, "r", encoding="ascii"))
 
     pages = []
     examples = {}
@@ -408,8 +405,8 @@ def build_pages(pages, examples):
 
 def main():
     "Main routine"
-    options, infile = parse_cli()
-    pages, examples = parse_config(infile, options)
+    options = parse_cli()
+    pages, examples = parse_config(options)
     build_pages(pages, examples)
 
 
