@@ -1,45 +1,57 @@
 #!/usr/bin/env python
 
-import sys
+"Create the CIAO gallery pages"
+
+# pylint: disable=consider-using-with
+# pylint: disable=import-outside-toplevel
+
 import os
 
-cwd=os.getcwd()
-data_dir = os.path.join( cwd, "data")
-png_dir = os.path.join( cwd, "pngs")
-xml_dir = cwd
-test_dir = os.path.join( cwd, "tests/ciao_gallery")
+CIAO_VERSION = "4.16"
+
+CWD = os.getcwd()
+DATA_DIR = os.path.join(CWD, "data")
+PNG_DIR = os.path.join(CWD, "pngs")
+TEST_DIR = os.path.join(CWD, "tests/ciao_gallery")
 
 
 def ch_data_dir(somefun):
-    def wrapper(*args, **kwargs ):
-        os.chdir( data_dir )
-        stt = somefun( *args, **kwargs )
-        os.chdir( cwd )
-        return(stt)
+    "decorator to change dir and back again"
+    def wrapper(*args, **kwargs):
+        "wrapper func"
+        os.chdir(DATA_DIR)
+        stt = somefun(*args, **kwargs)
+        os.chdir(CWD)
+        return stt
     return wrapper
-    
 
-class GalleryDoc(object):    
 
-    def writer( self, val ):
-        self.outfile.write( val.strip()+"\n")
+class GalleryDoc():
+    "Class to generate the gallery page"
+
+    def writer(self, val):
+        "Write output"
+        self.outfile.write(val.strip()+"\n")
 
     def __init__(self, title, outfile):
-        self.title=title
+        "Setup page"
+        self.title = title
         self.outfile_name = outfile
-        self.outfile = open( outfile, "w")
-        self.__head()        
-        
-    
+        self.outfile = open(outfile, "w", encoding="ascii")
+        self.examples = None
+        self.__head()
+
     def __head(self):
-        self.writer("""<?xml version='1.0' encoding='us-ascii' ?>
+        "Doc header"
+
+        self.writer(f"""<?xml version='1.0' encoding='us-ascii' ?>
         <!DOCTYPE page>
         <!-- This page is automatically generated, do not edit -->
         <page>
         <info>
-        <title><short>Gallery: {0}</short></title>
-        
-        <version>4.12</version>
+        <title><short>Gallery: {self.title}</short></title>
+
+        <version>{CIAO_VERSION}</version>
         <css>img.chips {{
         display: block;
         margin-left: auto;
@@ -56,67 +68,75 @@ class GalleryDoc(object):
         <breadcrumbs/>
         </info>
         <text>
-        <div align='center'><h1>Gallery: {0}</h1></div>
+        <div align='center'><h1>Gallery: {self.title}</h1></div>
         <p><cxclink href="thumbnail.html">Return to thumbnail page.</cxclink></p>
-        """.format(self.title))
+        """)
 
     def close(self):
+        "Close page"
         self.__tail()
         self.outfile.close()
-    
+
     def __tail(self):
+        "Close xml"
         self.writer(" </text>\n</page>")
-        
-    def make_toc(self, examples):        
+
+    def make_toc(self, examples):
+        "Create the table of contents"
         self.examples = examples
         self.writer("""<h2>Examples</h2>
         <list type='1'>
         """)
-        for i,e in enumerate(examples):
+        for i, e in enumerate(examples):
             e.num = i+1
             e.set_head()
-            self.writer("""<li><cxclink id="{0}">{1}</cxclink></li>""".format(e.anchor, e.title))
+            self.writer(f"""<li><cxclink id="{e.anchor}">{e.title}</cxclink></li>""")
         self.writer("""  </list>
         <hr/>""")
 
     def make_examples(self):
+        "Create example"
         for exam in self.examples:
-            for elm in ["hdr", "pre", "img", "cmd", "plt",  "pst", "ftr"]:
-                val = getattr( exam, elm )
+            for elm in ["hdr", "pre", "img", "cmd", "plt",  "pst"]:
+                val = getattr(exam, elm)
                 if val:
                     self.writer(val)
             self.writer("<hr/>")
 
 
-class Thumbnail(object):
+class Thumbnail():
+    "Class to create the thumbnail view"
 
-    def writer( self, val ):
-        self.fp.write( val.strip()+"\n")
-    
+    outfile = "thumbnail.xml"
+
+    def writer(self, val):
+        "Write page"
+        self.fp.write(val.strip()+"\n")
+
     def __init__(self):
-        
-        self.fp = open("thumbnail.xml","w")
+        "Setup"
+        self.fp = open(self.outfile, "w", encoding="ascii")
 
-        self.writer("""<?xml version='1.0' encoding='us-ascii' ?>
+        self.writer(f"""<?xml version='1.0' encoding='us-ascii' ?>
         <!DOCTYPE page>
         <!-- This page is automatically generated, do not edit -->
         <page>
         <info>
             <title><short>Thumbnails</short></title>
-            
-            <version>4.12</version>
-            <css>div.section { clear: both; }
-                div.sectiontitle {
+
+            <version>{CIAO_VERSION}</version>
+            <css>div.section {{ clear: both; }}
+                div.sectiontitle {{
                 padding-top: 1em;
                 text-align: center;
-            }
-            div.example {
+            }}
+            div.example {{
                 float: left;
                 margin: 5px;
                 padding: 10px;
                 border-radius: 15px;
                 background: #99cc66;
-            }
+            }}
             </css>
         <breadcrumbs/>
         </info>
@@ -127,42 +147,53 @@ class Thumbnail(object):
         """)
 
     def add_section(self, gallery):
-        
+        "Create different sections"
+
         for gg in gallery:
-            self.writer("""<div class='section'>
-            <div class='sectiontitle'><h2><cxclink href='{}'>{}</cxclink></h2></div>""".format(gg.outfile_name.replace(".xml",".html"), gg.title))
-            for ii,ee in enumerate(gg.examples):
-                self.writer("""
-                <div class='example'><div>{3}</div><cxclink href='{1}' id='{2}'><img src='pngs/thmb.{2}.png' alt='[{3}]'/></cxclink></div>
-                """.format(ii+1, gg.outfile_name.replace(".xml",".html"), ee.anchor, ee.title ))
+            outf = gg.outfile_name.replace(".xml", ".html")
+            self.writer(f"""<div class='section'>
+            <div class='sectiontitle'>
+              <h2><cxclink href='{outf}'>{gg.title}</cxclink></h2>
+            </div>""")
+            for ee in gg.examples:
+                self.writer(f"""
+                <div class='example'>
+                  <div>{ee.title}</div>
+                  <cxclink href='{outf}' id='{ee.anchor}'>
+                    <img src='pngs/thmb.{ee.anchor}.png' alt='[{ee.title}]'/>
+                  </cxclink>
+                </div>
+                """)
             self.writer("</div>")
 
-    
     def close(self):
-        
+        "Close xml"
         self.writer(""" </text>
             </page>""")
-        
+
         self.fp.close()
-        
 
 
-class IndexPage(object):
+class IndexPage():
+    "Class to create the index page"
 
-    def writer( self, val ):
-        self.fp.write( val.strip()+"\n")
-    
+    outfile = "index.xml"
+
+    def writer(self, val):
+        "Write outfile"
+        self.fp.write(val.strip()+"\n")
+
     def __init__(self):
-        
-        self.fp = open("index.xml","w")
+        "Setup"
+        self.fp = open(self.outfile, "w", encoding="ascii")
 
-        self.writer("""<?xml version='1.0' encoding='us-ascii' ?>
+        self.writer(f"""<?xml version='1.0' encoding='us-ascii' ?>
         <!DOCTYPE page>
         <!-- This page is automatically generated, do not edit -->
         <page>
         <info>
-            <title><short>Gallery List</short></title>            
-            <version>4.12</version>
+            <title><short>Gallery List</short></title>
+            <version>{CIAO_VERSION}</version>
         <breadcrumbs/>
         </info>
         <text>
@@ -171,193 +202,216 @@ class IndexPage(object):
         """)
 
     def add_section(self, gallery):
-        
+        "Add section"
+
         for gg in gallery:
-            self.writer("""<h2><cxclink href='{}'>{}</cxclink></h2>""".format(gg.outfile_name.replace(".xml",".html"), gg.title))
+            outf = gg.outfile_name.replace(".xml", ".html")
+            self.writer(f"""<h2><cxclink href='{outf}'>{gg.title}</cxclink></h2>""")
             self.writer("<list>")
-            for ii,ee in enumerate(gg.examples):
-                self.writer("""
-                <li><cxclink href='{1}' id='{2}'>{3}</cxclink></li>
-                """.format(ii+1, gg.outfile_name.replace(".xml",".html"), ee.anchor, ee.title ))
+            for ee in gg.examples:
+                self.writer(f"""<li><cxclink href='{outf}' id='{ee.anchor}'>{ee.title}</cxclink></li>""")
             self.writer("</list>")
 
-    
     def close(self):
-        
+        "Close outfile"
         self.writer(""" </text>
             </page>""")
-        
+
         self.fp.close()
 
 
+def write_regression_tests(gallery):
+    "Class to write commands to a regression test .MAIN file"
 
-class RegressionTest(object):
-    
-    def writer( self, val ):
-        self.fp.write( val.strip()+"\n")
+    for gg in gallery:
+        for ee in gg.examples:
+            with open(f"{TEST_DIR}/{ee.anchor}.MAIN", "w", encoding="ascii") as fp:
+                for c in ee.raw_cmds:
 
-    def close( self ):
-        self.fp.close()
-    
-    def __init__(self):
-        pass
-        
-    def add_section(self, gallery):
-        for gg in gallery:
-            for ee in gg.examples:
-                with open( "{}/{}.MAIN".format(test_dir, ee.anchor), "w") as fp:
-                    for c in ee.raw_cmds:
+                    for rr in ee.requires:
+                        c = c.replace(rr, "${CT_INDIR}/"+rr)
 
-                        for rr in ee.requires:
-                            c = c.replace( rr, "${CT_INDIR}/"+rr)
-
-                        fp.write(c+"\n")
-                    
+                    fp.write(c+"\n")
 
 
-        
-class CIAOExample( object ):    
+class CIAOExample():
+    "Class to hold parts of each example"
 
-    def __init__( self, anchor, title ):
-        self.anchor=anchor
-        self.title=title
+    def __init__(self, anchor, title):
+        self.anchor = anchor
+        self.title = title
         self.num = None
-        print("Working on {}".format(self.anchor))
-
         self.hdr = None
         self.pre = None
         self.img = None
         self.cmd = None
         self.pst = None
-        self.ftr = None
         self.png = None
         self.plt = None
+        self.raw_cmds = None
+        self.requires = None
+        print(f"Working on {self.anchor}")
 
-    def set_head( self ):
-        self.hdr = """<h2><div id='{0}'/>{1}) {2}</h2>""".format( self.anchor, self.num, self.title )
+    def set_head(self):
+        "Print header line"
+        self.hdr = f"""<h2><div id='{self.anchor}'/>{self.num}) {self.title}</h2>"""
 
-    def __tail( self ):
-        self.ftr = ""
+    def set_pre(self, words_words_words):
+        """This is the "pre" text; the text that appears describing
+        the example"""
 
-    def set_pre( self, words_words_words ):
-        self.pre="""<div class="before">{0}</div>""".format(words_words_words)
-        
-    def set_post( self, words_words_words ):
-        self.pst="""<div class="after">{0}</div>""".format(words_words_words)
-    
+        self.pre = f"""<div class="before">{words_words_words}</div>"""
+
+    def set_post(self, words_words_words):
+        """This is the "post" test; the text that appears after the
+        commands describing the commands"""
+        self.pst = f"""<div class="after">{words_words_words}</div>"""
+
     @ch_data_dir
-    def set_img(self,fits, extras, run=True):
+    def set_img(self, fits, extras, run=True):
+        """This is the text to display the image"""
 
-        #print "ds9 -title foo {1} {0} -saveimage {2} -exit".format(extras, fits, self.anchor+".png")
-        self.img = """<cxclink href="pngs/{0}.png"><img class='chips' src='pngs/thmb.{0}.png' alt='{0}'/></cxclink>""".format(self.anchor)
-
+        self.img = f"""
+        <cxclink href="pngs/{self.anchor}.png">
+          <img class='chips' src='pngs/thmb.{self.anchor}.png' alt='{self.anchor}'/>
+        </cxclink>"""
 
         import re
         nogeom = re.sub("-geometry *[0-9]*x[0-9]* ", "", extras)
 
-        plt = "ds9 {infiles} {xtra}".format( xtra=nogeom, infiles=fits )
-        self.plt = """
+        plt = f"ds9 {fits} {nogeom}"
+        self.plt = f"""
             <div><p>The following commands can be used to visualize the output</p>
-            <div class='examplecode'><screen>{0}</screen></div>
-            </div>""".format( plt )
+            <div class='examplecode'><screen>{plt}</screen></div>
+            </div>"""
 
         if not run:
             return
 
-        cmd = """ds9 {infiles} -view info no -view colorbar yes -view magnifier no 
+        outf = os.path.join(PNG_DIR, self.anchor+".png")
+        cmd = f"""ds9 {fits} -view info no -view colorbar yes -view magnifier no
         -view panner no -view buttons no -title foo -tile yes
-        {xtra} -saveimage {outfile} -exit""".format(xtra=extras, infiles=fits, outfile=os.path.join( png_dir, self.anchor+".png"))
-        cmd = cmd.replace("\n"," ")
+        {extras} -saveimage {outf} -exit"""
+        cmd = cmd.replace("\n", " ")
         print(cmd)
         if 0 != os.system(cmd):
-            raise RuntimeError( "problem making image {}".format(self.anchor))
-        
-        if 0 != os.system("convert {1}/{0}.png -resize x320 {1}/thmb.{0}.png".format(self.anchor,png_dir)):
-            raise RuntimeError("problem making thumbnail for {0}".format(self.anchor))
+            raise RuntimeError(f"problem making image {self.anchor}")
 
+        if 0 != os.system(f"convert {PNG_DIR}/{self.anchor}.png -resize x320 {PNG_DIR}/thmb.{self.anchor}.png"):
+            raise RuntimeError(f"problem making thumbnail for {self.anchor}")
 
     @ch_data_dir
     def set_cmds(self, cmds_to_run, run=False):
-        
+        """This is the text to run the commands"""
+
         self.raw_cmds = cmds_to_run
-        
+
         for cc in cmds_to_run:
-            if run and 0 != os.system( cc ):
-                raise RuntimeError("Problem running \n{}".format(cc))
+            if run and 0 != os.system(cc):
+                raise RuntimeError(f"Problem running \n{cc}")
 
         ss = list(map(lambda x: x.strip(), cmds_to_run))
-        for ii,cc in enumerate(ss):
-            #c0 = cc.split(" ")[0]
-            skip = [ "pset", "punlearn", "pget", "ahelp"]
+        for ii, cc in enumerate(ss):
+            skip = ["pset", "punlearn", "pget", "ahelp"]
             for c0 in cc.split(" "):
-                if c0 in skip: 
+                if c0 in skip:
                     continue
                 if 0 == len(c0):
                     continue
                 ciao = os.environ["ASCDS_INSTALL"]
-                if os.path.exists( ciao+"/bin/"+c0 ) or os.path.exists( ciao+"/contrib/bin/"+c0):
-                    cc=cc.replace( c0, """<ahelp name="{}"/>""".format(c0))
+                if os.path.exists(ciao+"/bin/"+c0) or os.path.exists(ciao+"/contrib/bin/"+c0):
+                    cc = cc.replace(c0, f"""<ahelp name="{c0}"/>""")
                     skip.append(c0)
             ss[ii] = cc
 
-
-        self.cmd = """<div class='examplecode'><screen>{0}</screen></div>""".format( "\n".join(ss) )
-        
-
-#--------------------------------------------------
+        cmds = "\n".join(ss)
+        self.cmd = f"""<div class='examplecode'><screen>{cmds}</screen></div>"""
 
 
-#import ConfigParser as cfg
-import configparser as cfg
-tasks = cfg.ConfigParser()
-tasks.readfp( open( "gallery.cfg", "r"))
+def parse_cli():
+    "Parse the command line options"
 
-pages = []
-examples = {}
+    from optparse import OptionParser
+    cli_pars = OptionParser()
 
-for task in tasks.sections():
-    example = CIAOExample( task, tasks.get(task,"title"))
-    example.set_cmds( tasks.get(task,"commands").strip().replace("\\\n","").split("\n"), run=tasks.getboolean(task,"run_cmd") )
-    example.set_img( tasks.get(task,"outfile"), tasks.get(task, "ds9_extras"), run=tasks.getboolean(task,"run_ds9"))
-    if tasks.has_option(task,"pretext") : 
-        example.set_pre( tasks.get(task,"pretext"))
-    if tasks.has_option(task,"posttext") : 
-        example.set_post( tasks.get(task,"posttext"))
+    cli_pars.add_option("-d", "--skip-ds9", dest="run_ds9", default=True,
+                        action="store_false", help="Skip running ds9 commands")
+    cli_pars.add_option("-r", "--skip-run", dest="run_cmd", default=True,
+                        action="store_false", help="Skip running CIAO commands")
+    (options, args) = cli_pars.parse_args()
 
-    if tasks.has_option(task, "requires"):
-        example.requires = tasks.get(task,"requires").strip().split()
+    if len(args) == 0:
+        infile = "gallery.cfg"
+    elif len(args) == 1:
+        infile = args[0]
     else:
-        example.requires = None
+        raise ValueError("Usage: python gallery.py [--skip-ds9] [--skip-run] [infile]")
+
+    return options, infile
 
 
-    tt = task.split(".")[0] 
-    if tt not in pages: 
-        pages.append( tt )
-        examples[tt] = [ example ]
-    else:
-        examples[tt].append( example )
+def parse_config(infile, options):
+    "Parse the config file"
+
+    import configparser as cfg
+    tasks = cfg.ConfigParser()
+    tasks.read_file(open(infile, "r", encoding="ascii"))
+
+    pages = []
+    examples = {}
+
+    for task in tasks.sections():
+        example = CIAOExample(task, tasks.get(task, "title"))
+        example.set_cmds(tasks.get(task, "commands").strip().replace("\\\n", "").split("\n"),
+                         run=options.run_cmd)
+        example.set_img(tasks.get(task, "outfile"), tasks.get(task, "ds9_extras"),
+                        run=options.run_ds9)
+        if tasks.has_option(task, "pretext"):
+            example.set_pre(tasks.get(task, "pretext"))
+        if tasks.has_option(task, "posttext"):
+            example.set_post(tasks.get(task, "posttext"))
+
+        if tasks.has_option(task, "requires"):
+            example.requires = tasks.get(task, "requires").strip().split()
+
+        tt = task.split(".")[0]
+        if tt not in pages:
+            pages.append(tt)
+            examples[tt] = [example]
+        else:
+            examples[tt].append(example)
+
+    return pages, examples
 
 
-toc = []
+def build_pages(pages, examples):
+    "Create the pages"
+    toc = []
 
-for page in pages:
-    doc = GalleryDoc( page.capitalize(), page+".xml" )
-    doc.make_toc( examples[page] )
-    doc.make_examples()
-    doc.close()
-    toc.append( doc )
+    for page in pages:
+        doc = GalleryDoc(page.capitalize(), page+".xml")
+        doc.make_toc(examples[page])
+        doc.make_examples()
+        doc.close()
+        toc.append(doc)
+
+    tt = Thumbnail()
+    tt.add_section(toc)
+    tt.close()
+
+    tt = IndexPage()
+    tt.add_section(toc)
+    tt.close()
+
+    write_regression_tests(toc)
 
 
+def main():
+    "Main routine"
+    options, infile = parse_cli()
+    pages, examples = parse_config(infile, options)
+    build_pages(pages, examples)
 
-tt = Thumbnail()
-tt.add_section( toc )
-tt.close()
 
-
-tt = IndexPage()
-tt.add_section( toc )
-tt.close()
-
-zz = RegressionTest()
-zz.add_section(toc)
-
+if __name__ == "__main__":
+    main()
