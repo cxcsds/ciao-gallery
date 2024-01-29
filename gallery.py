@@ -240,17 +240,16 @@ class CIAOExample():
     def __init__(self, anchor, title):
         self.anchor = anchor
         self.title = title
-        self.num = None
-        self.hdr = None
-        self.pre = None
-        self.img = None
-        self.cmd = None
-        self.pst = None
-        self.png = None
-        self.plt = None
-        self.raw_cmds = None
-        self.requires = None
-        print(f"Working on {self.anchor}")
+        self.num = None       # Example number 1-N
+        self.hdr = None       # Example title header
+        self.pre = None       # Text before example commands
+        self.img = None       # Image showing output
+        self.cmd = None       # The commands to run
+        self.pst = None       # The text after the example
+        self.plt = None       # The commands to plot the data
+        self.raw_cmds = None  # The commands to run for reg tests
+        self.requires = None  # List of input files
+        print(f"\033[33m\033[1mWorking on {self.anchor}\033[0m")
 
     def set_head(self):
         "Print header line"
@@ -289,7 +288,8 @@ class CIAOExample():
             return
 
         outf = os.path.join(PNG_DIR, self.anchor+".png")
-        cmd = f"""ds9 {fits} -view info no -view colorbar yes -view magnifier no
+        cmd = f"""ds9 {fits} -view info no -view colorbar yes
+        -view multi yes -view magnifier no
         -view panner no -view buttons no -title foo -tile yes
         {extras} -saveimage {outf} -exit"""
         cmd = cmd.replace("\n", " ")
@@ -307,6 +307,7 @@ class CIAOExample():
         self.raw_cmds = cmds_to_run
 
         for cc in cmds_to_run:
+            print(cc)
             if run and 0 != os.system(cc):
                 raise RuntimeError(f"Problem running \n{cc}")
 
@@ -408,6 +409,7 @@ def main():
     options = parse_cli()
     pages, examples = parse_config(options)
     build_pages(pages, examples)
+    print("")
 
 
 if __name__ == "__main__":
