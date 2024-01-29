@@ -68,7 +68,7 @@ class GalleryDoc():
         <breadcrumbs/>
         </info>
         <text>
-        <div align='center'><h1>Gallery: {self.title}</h1></div>
+        <div style='text-align: center'><h1>Gallery: {self.title}</h1></div>
         <p><cxclink href="thumbnail.html">Return to thumbnail page.</cxclink></p>
         """)
 
@@ -141,7 +141,7 @@ class Thumbnail():
         <breadcrumbs/>
         </info>
         <text>
-        <div align='center'><h1>Thumbnails of CIAO examples</h1></div>
+        <div style='text-align: center;'><h1>Thumbnails of CIAO examples</h1></div>
         <p><cxclink href="index.html">Go to list of gallery examples.</cxclink></p>
         <p>Select an image to see how it was created.</p>
         """)
@@ -156,11 +156,13 @@ class Thumbnail():
               <h2><cxclink href='{outf}'>{gg.title}</cxclink></h2>
             </div>""")
             for ee in gg.examples:
+                clean = ee.title.replace("<new/>","")
+
                 self.writer(f"""
                 <div class='example'>
                   <div>{ee.title}</div>
                   <cxclink href='{outf}' id='{ee.anchor}'>
-                    <img src='pngs/thmb.{ee.anchor}.png' alt='[{ee.title}]'/>
+                    <img src='pngs/thmb.{ee.anchor}.png' alt='[{clean}]'/>
                   </cxclink>
                 </div>
                 """)
@@ -197,7 +199,7 @@ class IndexPage():
         <breadcrumbs/>
         </info>
         <text>
-        <div align='center'><h1>List of CIAO examples</h1></div>
+        <div style='text-align: center;'><h1>List of CIAO examples</h1></div>
         <p><cxclink href="thumbnail.html">Go to thumbnail view.</cxclink></p>
         """)
 
@@ -253,7 +255,7 @@ class CIAOExample():
 
     def set_head(self):
         "Print header line"
-        self.hdr = f"""<h2><div id='{self.anchor}'/>{self.num}) {self.title}</h2>"""
+        self.hdr = f"""<h2><span id='{self.anchor}'>{self.num}) {self.title}</span></h2>"""
 
     def set_pre(self, words_words_words):
         """This is the "pre" text; the text that appears describing
