@@ -156,7 +156,7 @@ class Thumbnail():
               <h2><cxclink href='{outf}'>{gg.title}</cxclink></h2>
             </div>""")
             for ee in gg.examples:
-                clean = ee.title.replace("<new/>","")
+                clean = ee.title.replace("<new/>", "")
 
                 self.writer(f"""
                 <div class='example'>
@@ -272,6 +272,8 @@ class CIAOExample():
     def set_img(self, fits, extras, run=True):
         """This is the text to display the image"""
 
+        from textwrap import wrap
+
         self.img = f"""
         <cxclink href="pngs/{self.anchor}.png">
           <img class='chips' src='pngs/thmb.{self.anchor}.png' alt='{self.anchor}'/>
@@ -281,6 +283,11 @@ class CIAOExample():
         nogeom = re.sub("-geometry *[0-9]*x[0-9]* ", "", extras)
 
         plt = f"ds9 {fits} {nogeom}"
+
+        plt = " \\\n".join(wrap(plt, width=150, break_long_words=False,
+                                break_on_hyphens=False,
+                                subsequent_indent='    '))
+
         self.plt = f"""
             <div><p>The following commands can be used to visualize the output</p>
             <div class='examplecode'><screen>{plt}</screen></div>
