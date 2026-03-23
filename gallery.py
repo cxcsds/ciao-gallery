@@ -352,6 +352,9 @@ def parse_cli():
     cli_pars.add_argument("--skip-run", dest="run_cmd", default=True,
                           action="store_false", help="Skip running CIAO commands")
 
+    cli_pars.add_argument("--just", dest="tag", default="",
+                          action="store", help="Only run a single section")
+
     args = cli_pars.parse_args()
 
     return args
@@ -369,6 +372,11 @@ def parse_config(options):
 
     for task in tasks.sections():
         example = CIAOExample(task, tasks.get(task, "title"))
+
+        if options.tag != "" and example.anchor != options.tag:
+            print(f"\033[32m\033[1m\t...skipped...\033[0m")
+            continue
+
         example.set_cmds(tasks.get(task, "commands").strip().replace("\\\n", "").split("\n"),
                          run=options.run_cmd)
         example.set_img(tasks.get(task, "outfile"), tasks.get(task, "ds9_extras"),
